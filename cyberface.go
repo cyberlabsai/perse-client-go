@@ -57,12 +57,12 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 
 	fileWriter, err := writer.CreateFormFile("data", imageData.Name())
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	_, err = io.Copy(fileWriter, imageData)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/upload")
@@ -82,9 +82,7 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 	defer response.Body.Close()
 
 	responseData := struct {
-		Body struct {
-			UUID string `json:"UUID"`
-		} `json:"body"`
+		UUID string `json:"image_token"`
 	}{}
 
 	err = json.NewDecoder(response.Body).Decode(&responseData)
@@ -92,7 +90,7 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 		return "", err
 	}
 
-	return responseData.Body.UUID, nil
+	return responseData.UUID, nil
 }
 
 // FaceCompareUUID gets the json with the results of the face recognition for a given uuid
