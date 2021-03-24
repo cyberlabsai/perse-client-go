@@ -1,9 +1,12 @@
 package cyberface
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"time"
@@ -17,7 +20,7 @@ type FaceRecClient struct {
 }
 
 const httpRequestTimeOut = 5 * time.Second
-const apiAddress = "https://vdvubhbr8e.execute-api.us-east-1.amazonaws.com"
+const apiAddress = "https://76f5ey2m6j.execute-api.us-east-1.amazonaws.com"
 
 // New creates a new instance of a face recog client
 func New(key string, client *http.Client) *FaceRecClient {
@@ -47,14 +50,29 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 	}
 	defer imageData.Close()
 
-	urlWithPath := fmt.Sprintf("%s/%s", faceRecClient.url, "/v0/upload")
+	buffer := new(bytes.Buffer)
 
-	request, err := http.NewRequest("POST", urlWithPath, imageData)
+	writer := multipart.NewWriter(buffer)
+	defer writer.Close()
+
+	fileWriter, err := writer.CreateFormFile("data", imageData.Name())
+	if err != nil {
+		return "", nil
+	}
+
+	_, err = io.Copy(fileWriter, imageData)
+	if err != nil {
+		return "", nil
+	}
+
+	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/upload")
+
+	request, err := http.NewRequest("POST", urlWithPath, buffer)
 	if err != nil {
 		return "", err
 	}
 
-	request.Header.Add("content-type", "application/json")
+	request.Header.Add("content-type", writer.FormDataContentType())
 	request.Header.Add("x-api-key", faceRecClient.apiKey)
 
 	response, err := faceRecClient.httpClient.Do(request)
@@ -80,20 +98,19 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 // FaceCompareUUID gets the json with the results of the face recognition for a given uuid
 // returns the []byte with the json data and the error sent by the server or parser
 func (faceRecClient *FaceRecClient) FaceCompareUUID(uuid1 string, uuid2 string) ([]byte, error) {
-	urlWithPath := fmt.Sprintf("%s/%s", faceRecClient.url, "/v0/facecompare")
+	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/facecompare")
 
 	request, err := http.NewRequest("GET", urlWithPath, nil)
 	if err != nil {
 		return make([]byte, 0), err
 	}
 
-	request.Header.Add("content-type", "application/json")
 	request.Header.Add("x-api-key", faceRecClient.apiKey)
 
 	url := request.URL.Query()
 
-	url.Add("UUID_1", uuid1)
-	url.Add("UUID_2", uuid2)
+	url.Add("image_token_1", uuid1)
+	url.Add("image_token_2", uuid2)
 
 	request.URL.RawQuery = url.Encode()
 
@@ -114,15 +131,20 @@ func (faceRecClient *FaceRecClient) FaceCompareUUID(uuid1 string, uuid2 string) 
 // DetectFacesUUID gets the json with the results of the face detection for a given uuid
 // returns the []byte with the json data and the error sent by the server or parser
 func (faceRecClient *FaceRecClient) DetectFacesUUID(uuid string) ([]byte, error) {
-	urlWithPath := fmt.Sprintf("%s/%s", faceRecClient.url, "/v0/facedetect")
+	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/facedetect")
 
 	request, err := http.NewRequest("GET", urlWithPath, nil)
 	if err != nil {
 		return make([]byte, 0), err
 	}
 
-	request.Header.Add("content-type", "application/json")
 	request.Header.Add("x-api-key", faceRecClient.apiKey)
+
+	url := request.URL.Query()
+
+	url.Add("image_token", uuid)
+
+	request.URL.RawQuery = url.Encode()
 
 	response, err := faceRecClient.httpClient.Do(request)
 	if err != nil {
