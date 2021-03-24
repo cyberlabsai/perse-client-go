@@ -55,6 +55,7 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 	}
 
 	request.Header.Add("content-type", "application/json")
+	request.Header.Add("x-api-key", faceRecClient.apiKey)
 
 	response, err := faceRecClient.httpClient.Do(request)
 	if err != nil {
@@ -87,6 +88,7 @@ func (faceRecClient *FaceRecClient) FaceCompareUUID(uuid1 string, uuid2 string) 
 	}
 
 	request.Header.Add("content-type", "application/json")
+	request.Header.Add("x-api-key", faceRecClient.apiKey)
 
 	url := request.URL.Query()
 
@@ -120,6 +122,7 @@ func (faceRecClient *FaceRecClient) DetectFacesUUID(uuid string) ([]byte, error)
 	}
 
 	request.Header.Add("content-type", "application/json")
+	request.Header.Add("x-api-key", faceRecClient.apiKey)
 
 	response, err := faceRecClient.httpClient.Do(request)
 	if err != nil {
