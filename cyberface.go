@@ -53,7 +53,6 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 	buffer := new(bytes.Buffer)
 
 	writer := multipart.NewWriter(buffer)
-	defer writer.Close()
 
 	fileWriter, err := writer.CreateFormFile("data", imageData.Name())
 	if err != nil {
@@ -61,6 +60,11 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 	}
 
 	_, err = io.Copy(fileWriter, imageData)
+	if err != nil {
+		return "", err
+	}
+
+	err = writer.Close()
 	if err != nil {
 		return "", err
 	}
