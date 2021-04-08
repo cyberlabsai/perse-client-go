@@ -1,36 +1,75 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 
 	cyberFace "github.com/cyberlabsai/cyberface-client-go"
 )
 
+func getKey() string {
+	file, err := os.Open(".env")
+	if err != nil {
+		panic(fmt.Sprintf("cannot open the .env file:\n%s", err.Error()))
+	}
+	defer file.Close()
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		panic(fmt.Sprintf("cannot read file contents:\n%s", err.Error()))
+	}
+
+	splited := strings.Split(string(data), "=")
+
+	return splited[1]
+}
+
 func main() {
-	fmt.Println("inicio")
+	fmt.Println("begin")
 
-	client := cyberFace.New("key here", nil)
+	img1, err := os.Open("./images/musk1.jpeg")
+	if err != nil {
+		panic(fmt.Sprintf("problems opening first image:\n%s", err.Error()))
+	}
+	defer img1.Close()
 
-	fmt.Println("upando 1")
-	id1, err1 := client.UploadImageFromPath("lula1.jpeg")
-	fmt.Println("upando 2")
-	id2, err2 := client.UploadImageFromPath("lula2.jpeg")
+	img2, err := os.Open("./images/musk1.jpeg")
+	if err != nil {
+		panic(fmt.Sprintf("problems opening second image:\n%s", err.Error()))
+	}
+	defer img2.Close()
 
-	fmt.Println(id1, err1)
-	fmt.Println(id2, err2)
+	apiKey := getKey()
 
-	fmt.Println("detectando 1")
-	faces1, err1 := client.DetectFacesUUID(id1)
-	fmt.Println("detectando 2")
-	faces2, err2 := client.DetectFacesUUID(id2)
+	client := cyberFace.New(apiKey, nil)
+
+	fmt.Println("face detect")
+	faces1, err1 := client.DetectFaces(img1)
 
 	fmt.Println(string(faces1), err1)
-	fmt.Println(string(faces2), err2)
 
-	fmt.Println("comparando")
-	compare, err := client.FaceCompareUUID(id1, id2)
+	fmt.Println("compare")
+
+	frameData := struct {
+		ImageToken string `json:"image_token"`
+	}{}
+
+	err = json.Unmarshal(faces1, &frameData)
+	if err != nil {
+		panic(fmt.Sprintf("problems desserializing face detect data:\n%s", err.Error()))
+	}
+
+	compareData := make([]interface{}, 0)
+
+	compareData = append(compareData, frameData.ImageToken)
+	compareData = append(compareData, img2)
+
+	compare, err := client.FaceCompare(compareData)
 
 	fmt.Println(string(compare), err)
 
-	fmt.Println("fim")
+	fmt.Println("end")
 }

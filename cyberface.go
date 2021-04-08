@@ -2,13 +2,14 @@ package cyberface
 
 import (
 	"bytes"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -41,39 +42,55 @@ func New(key string, client *http.Client) *FaceRecClient {
 	}
 }
 
-// UploadImageFromPath opens an image from "imagePath" as binary and sends to the server
-// returns the image UUID if successful or an error with the error message sent by the server
-func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (string, error) {
-	imageData, err := os.Open(imagePath)
-	if err != nil {
-		return "", err
+func (faceRecClient *FaceRecClient) FaceCompare(images []interface{}) ([]byte, error) {
+	if len(images) != 2 {
+		return nil, errors.New("images must have 2 elements")
 	}
-	defer imageData.Close()
 
 	buffer := new(bytes.Buffer)
 
 	writer := multipart.NewWriter(buffer)
 
-	fileWriter, err := writer.CreateFormFile("data", imageData.Name())
-	if err != nil {
-		return "", err
+	for index, data := range images {
+		if testedData, ok := data.(*os.File); ok {
+			fileWriter, err := writer.CreateFormFile(fmt.Sprintf("image_file%d", index+1), testedData.Name())
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err = io.Copy(fileWriter, testedData); err != nil {
+				return nil, err
+			}
+
+		} else {
+			if testedData, ok := data.(string); ok {
+				fileWriter, err := writer.CreateFormField(fmt.Sprintf("image_token%d", index+1))
+				if err != nil {
+					return nil, err
+				}
+
+				readerData := strings.NewReader(testedData)
+
+				if _, err := io.Copy(fileWriter, readerData); err != nil {
+					return nil, err
+				}
+
+			} else {
+				return nil, errors.New("image in the list must be either a *os.File (the image file) or a string (image token)")
+			}
+		}
 	}
 
-	_, err = io.Copy(fileWriter, imageData)
+	err := writer.Close()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	err = writer.Close()
-	if err != nil {
-		return "", err
-	}
-
-	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/upload")
+	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/face/compare")
 
 	request, err := http.NewRequest("POST", urlWithPath, buffer)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	request.Header.Add("content-type", writer.FormDataContentType())
@@ -81,118 +98,58 @@ func (faceRecClient *FaceRecClient) UploadImageFromPath(imagePath string) (strin
 
 	response, err := faceRecClient.httpClient.Do(request)
 	if err != nil {
-		return "", err
-	}
-	defer response.Body.Close()
-
-	responseData := struct {
-		UUID string `json:"image_token"`
-	}{}
-
-	err = json.NewDecoder(response.Body).Decode(&responseData)
-	if err != nil {
-		return "", err
-	}
-
-	return responseData.UUID, nil
-}
-
-// FaceCompareUUID gets the json with the results of the face recognition for a given uuid
-// returns the []byte with the json data and the error sent by the server or parser
-func (faceRecClient *FaceRecClient) FaceCompareUUID(uuid1 string, uuid2 string) ([]byte, error) {
-	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/facecompare")
-
-	request, err := http.NewRequest("GET", urlWithPath, nil)
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	request.Header.Add("x-api-key", faceRecClient.apiKey)
-
-	url := request.URL.Query()
-
-	url.Add("image_token_1", uuid1)
-	url.Add("image_token_2", uuid2)
-
-	request.URL.RawQuery = url.Encode()
-
-	response, err := faceRecClient.httpClient.Do(request)
-	if err != nil {
-		return make([]byte, 0), err
+		return nil, err
 	}
 	defer response.Body.Close()
 
 	responseData, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return make([]byte, 0), err
+		return nil, err
 	}
 
 	return responseData, nil
 }
 
-// DetectFacesUUID gets the json with the results of the face detection for a given uuid
-// returns the []byte with the json data and the error sent by the server or parser
-func (faceRecClient *FaceRecClient) DetectFacesUUID(uuid string) ([]byte, error) {
-	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/facedetect")
+func (faceRecClient *FaceRecClient) DetectFaces(imageData *os.File) ([]byte, error) {
+	buffer := new(bytes.Buffer)
 
-	request, err := http.NewRequest("GET", urlWithPath, nil)
+	writer := multipart.NewWriter(buffer)
+
+	fileWriter, err := writer.CreateFormFile("image_file", imageData.Name())
 	if err != nil {
-		return make([]byte, 0), err
+		return nil, err
 	}
 
+	_, err = io.Copy(fileWriter, imageData)
+	if err != nil {
+		return nil, err
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/face/detect")
+
+	request, err := http.NewRequest("POST", urlWithPath, buffer)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Add("content-type", writer.FormDataContentType())
 	request.Header.Add("x-api-key", faceRecClient.apiKey)
-
-	url := request.URL.Query()
-
-	url.Add("image_token", uuid)
-
-	request.URL.RawQuery = url.Encode()
 
 	response, err := faceRecClient.httpClient.Do(request)
 	if err != nil {
-		return make([]byte, 0), err
+		return nil, err
 	}
 	defer response.Body.Close()
 
 	responseData, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return make([]byte, 0), err
+		return nil, err
 	}
 
 	return responseData, nil
-}
-
-// DetectFaces shortcut to open a file and detect a face
-func (faceRecClient *FaceRecClient) DetectFaces(imagePath string) ([]byte, error) {
-	UUID, err := faceRecClient.UploadImageFromPath(imagePath)
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	imageData, err := faceRecClient.DetectFacesUUID(UUID)
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	return imageData, nil
-}
-
-// FacRecognize shortcut to open the two image files and compare their faces
-func (faceRecClient *FaceRecClient) FacRecognize(imagePath1 string, imagePath2 string) ([]byte, error) {
-	UUID1, err := faceRecClient.UploadImageFromPath(imagePath1)
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	UUID2, err := faceRecClient.UploadImageFromPath(imagePath2)
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	imageData, err := faceRecClient.FaceCompareUUID(UUID1, UUID2)
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	return imageData, nil
 }
