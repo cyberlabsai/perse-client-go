@@ -47,9 +47,9 @@ func main() {
 	client := cyberFace.New(apiKey, nil)
 
 	fmt.Println("face detect")
-	faces1, err1 := client.DetectFaces(img1)
+	faces, err := client.DetectFaces(img1)
 
-	fmt.Println(string(faces1), err1)
+	fmt.Println(string(faces), err)
 
 	fmt.Println("compare")
 
@@ -57,7 +57,7 @@ func main() {
 		ImageToken string `json:"image_token"`
 	}{}
 
-	err = json.Unmarshal(faces1, &frameData)
+	err = json.Unmarshal(faces, &frameData)
 	if err != nil {
 		panic(fmt.Sprintf("problems desserializing face detect data:\n%s", err.Error()))
 	}
