@@ -21,7 +21,7 @@ type FaceRecClient struct {
 }
 
 const httpRequestTimeOut = 5 * time.Second
-const apiAddress = "https://76f5ey2m6j.execute-api.us-east-1.amazonaws.com"
+const apiAddress = "api.cyberface.ai"
 
 // New creates a new instance of a face recog client
 func New(key string, client *http.Client) *FaceRecClient {
