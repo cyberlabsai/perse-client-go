@@ -1,6 +1,6 @@
-# cyberface-client-go
+# perse-client-go
 
-A simple SDK to help using the CyberFace API.
+A simple SDK to help using the perse API.
 
 
 ## How to use
@@ -10,13 +10,13 @@ A simple SDK to help using the CyberFace API.
 First, get the package with:
 
 ```
-go get -v -u github.com/cyberlabsai/cyberface-client-go
+go get -v -u github.com/cyberlabsai/perse-client-go
 ```
 
 Then, make sure to import the package using:
 
 ```
-cyberFace "github.com/cyberlabsai/cyberface-client-go"
+perse "github.com/cyberlabsai/perse-client-go"
 ```
 
 ### Creating the client instance
@@ -24,7 +24,7 @@ cyberFace "github.com/cyberlabsai/cyberface-client-go"
 Then, you need to create a client with:
 
 ```
-client := cyberFace.New(apiKey, nil)
+client := perse.New(apiKey, nil)
 ```
 
 To get an apiKey ( string ), contact our sales team C:
