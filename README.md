@@ -1,21 +1,36 @@
+[<img src="https://raw.githubusercontent.com/Yoonit-Labs/nativescript-yoonit-camera/development/logo_cyberlabs.png" width="300">](https://cyberlabs.ai/)
+
 # perse-client-go
 
-A simple SDK to help using the perse API.
+This is an example client implementation written in Go to interact the Perse API.
 
+For more information, read the [API documentation](https://apidocs.cyberface.ai/).
+
+## Run the example
+
+```bash
+export API_KEY=<provided api key>
+
+go build -o example/main example/main.go
+
+cd example
+
+./main
+```
 
 ## How to use
 
 ### Getting the package
 
-First, get the package with:
+First, download the package with:
 
-```
+```bash
 go get -v -u github.com/cyberlabsai/perse-client-go
 ```
 
 Then, make sure to import the package using:
 
-```
+```bash
 perse "github.com/cyberlabsai/perse-client-go"
 ```
 
@@ -35,13 +50,13 @@ the second parameter ( *http.Client ) is an istance of go's http client. Create 
 
 To detect faces in a frame, use the "DetectFaces" method.
 
-```
-faces, err := client.DetectFaces(img1)
+```bash
+faces, err := client.DetectFaces(img1, "image/jpg")
 ```
 
-```
+```bash
 // function header
-(faceRecClient *FaceRecClient) DetectFaces(imageData *os.File) ([]byte, error)
+(faceRecClient *FaceRecClient) DetectFaces(imgData []byte, contentType string) ([]byte, error)
 ```
 
 It takes an *os.File (aka a file that you can open with os.Open). It returns a []byte with the data received from the server. You can use the json.Unmarshal to parse it. the faces will be nil in case of error.
@@ -51,12 +66,12 @@ It takes an *os.File (aka a file that you can open with os.Open). It returns a [
 You can use the method "FaceCompare" to compare two faces.
 
 ```
-compare, err := client.FaceCompare(compareData)
+compare, err := client.FaceCompare(img1, img2, "image/jpg")
 ```
 
 ```
 // function header
-(faceRecClient *FaceRecClient) FaceCompare(images []interface{}) ([]byte, error)
+(faceRecClient *FaceRecClient) FaceCompare(img1 []byte, img2 []byte, contentType string) ([]byte, error)
 ```
 
 It takes a list with either the image tokens returned by the detectFace or the *os.File (or even both).
@@ -67,3 +82,5 @@ It will return a []byte with the server's response and a error.
 ## Examples
 
 For further details, take a look on the "examples" directory. You will find some usefull pieces of code.
+
+[![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
