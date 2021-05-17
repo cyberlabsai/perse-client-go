@@ -18,14 +18,14 @@ type FaceRecClient struct {
 }
 
 const httpRequestTimeOut = 5 * time.Second
-const APIURL = "https://api.getperse.com"
+const apiAddress = "https://api.dev.getperse.com"
 
-// New creates a new instance of a face recognition client
+// New creates a new instance of a face recog client
 func New(key string, client *http.Client) *FaceRecClient {
 	if client == nil {
 		return &FaceRecClient{
 			apiKey: key,
-			url:    APIURL,
+			url:    apiAddress,
 			httpClient: http.Client{
 				Timeout: httpRequestTimeOut,
 			},
@@ -34,33 +34,37 @@ func New(key string, client *http.Client) *FaceRecClient {
 
 	return &FaceRecClient{
 		apiKey:     key,
-		url:        APIURL,
+		url:        apiAddress,
 		httpClient: *client,
 	}
 }
 
-func (faceRecClient *FaceRecClient) FaceCompare(img1 []byte, img2 []byte, contentType string) ([]byte, error) {
+func (faceRecClient *FaceRecClient) FaceCompare(image1 []byte, image2 []byte) ([]byte, error) {
+	buffer := new(bytes.Buffer)
 
-	r := bytes.NewReader(img1)
+	writer := multipart.NewWriter(buffer)
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	fw, err := writer.CreateFormFile("image_file1", "img1.jpg")
-	if err != nil {
-		return nil, err
-	}
-	_, err = io.Copy(fw, r)
+	// image 1 ---------------------------
+	fileWriter1, err := writer.CreateFormFile("image_file1", "img1.jpeg")
 	if err != nil {
 		return nil, err
 	}
 
-	r = bytes.NewReader(img2)
+	if _, err = io.Copy(fileWriter1, bytes.NewReader(image1)); err != nil {
+		return nil, err
+	}
 
-	fw, err = writer.CreateFormFile("image_file2", "img2.jpg")
+	// image 2 ---------------------------
+	fileWriter2, err := writer.CreateFormFile("image_file2", "img2.jpeg")
 	if err != nil {
 		return nil, err
 	}
-	_, err = io.Copy(fw, r)
+
+	if _, err = io.Copy(fileWriter2, bytes.NewReader(image2)); err != nil {
+		return nil, err
+	}
+
+	err = writer.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +76,7 @@ func (faceRecClient *FaceRecClient) FaceCompare(img1 []byte, img2 []byte, conten
 		return nil, err
 	}
 
-	request.Header.Add("content-type", contentType)
+	request.Header.Add("content-type", writer.FormDataContentType())
 	request.Header.Add("x-api-key", faceRecClient.apiKey)
 
 	response, err := faceRecClient.httpClient.Do(request)
@@ -89,18 +93,34 @@ func (faceRecClient *FaceRecClient) FaceCompare(img1 []byte, img2 []byte, conten
 	return responseData, nil
 }
 
-func (faceRecClient *FaceRecClient) DetectFaces(imageData []byte, contentType string) ([]byte, error) {
+func (faceRecClient *FaceRecClient) DetectFaces(image []byte) ([]byte, error) {
+	buffer := new(bytes.Buffer)
 
-	r := bytes.NewReader(imageData)
+	writer := multipart.NewWriter(buffer)
 
-	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/face/detect")
-
-	request, err := http.NewRequest("POST", urlWithPath, r)
+	fileWriter, err := writer.CreateFormFile("image_file", "img1.jpeg")
 	if err != nil {
 		return nil, err
 	}
 
-	request.Header.Add("content-type", contentType)
+	_, err = io.Copy(fileWriter, bytes.NewReader(image))
+	if err != nil {
+		return nil, err
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/face/detect")
+
+	request, err := http.NewRequest("POST", urlWithPath, buffer)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Add("content-type", writer.FormDataContentType())
 	request.Header.Add("x-api-key", faceRecClient.apiKey)
 
 	response, err := faceRecClient.httpClient.Do(request)
