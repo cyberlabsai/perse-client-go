@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	cyberFace "github.com/cyberlabsai/cyberface-client-go"
+	perse "github.com/cyberlabsai/perse-client-go"
 )
 
 func getApiKey() string {
@@ -32,7 +32,7 @@ func main() {
 		panic(fmt.Sprintf("problems opening second image:\n%s", err.Error()))
 	}
 
-	client := cyberFace.New(getApiKey(), nil)
+	client := perse.New(getApiKey(), nil)
 
 	fmt.Println("face detect")
 	faces, err := client.DetectFaces(img1)
