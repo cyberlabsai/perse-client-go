@@ -20,7 +20,7 @@ type FaceRecClient struct {
 const httpRequestTimeOut = 5 * time.Second
 const apiAddress = "https://api.dev.getperse.com"
 
-// New creates a new instance of a face recog client
+// New creates a new instance of a face recognition client
 func New(key string, client *http.Client) *FaceRecClient {
 	if client == nil {
 		return &FaceRecClient{
