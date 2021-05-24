@@ -1,3 +1,3 @@
-module github.com/cyberlabsai/cyberface-client-go
+module github.com/cyberlabsai/perse-client-go
 
 go 1.16
