@@ -11,11 +11,9 @@ For more information, read the [API documentation](https://apidocs.cyberface.ai/
 ```bash
 export API_KEY=<provided api key>
 
-go build -o example/main example/main.go
-
 cd example
 
-./main
+go run main.go
 ```
 
 ## How to use
@@ -51,30 +49,30 @@ the second parameter ( *http.Client ) is an istance of go's http client. Create 
 To detect faces in a frame, use the "DetectFaces" method.
 
 ```bash
-faces, err := client.DetectFaces(img1, "image/jpg")
+faces, err := client.DetectFaces(image_with_some_face)
 ```
 
 ```bash
 // function header
-(faceRecClient *FaceRecClient) DetectFaces(imgData []byte, contentType string) ([]byte, error)
+(faceRecClient *FaceRecClient) DetectFaces(image []byte) ([]byte, error)
 ```
 
-It takes an *os.File (aka a file that you can open with os.Open). It returns a []byte with the data received from the server. You can use the json.Unmarshal to parse it. the faces will be nil in case of error.
+It takes an []byte (the contents of an image file). It returns a []byte with the data received from the server. You can use the json.Unmarshal to parse it. the faces will be nil in case of error.
 
 ### Comparing faces
 
 You can use the method "FaceCompare" to compare two faces.
 
 ```
-compare, err := client.FaceCompare(img1, img2, "image/jpg")
+compare, err := client.FaceCompare(image_with_some_face, another_image_with_some_face)
 ```
 
 ```
 // function header
-(faceRecClient *FaceRecClient) FaceCompare(img1 []byte, img2 []byte, contentType string) ([]byte, error)
+(faceRecClient *FaceRecClient) FaceCompare(image1 []byte, image2 []byte) ([]byte, error)
 ```
 
-It takes a list with either the image tokens returned by the detectFace or the *os.File (or even both).
+It takes the contents of two images as []bytes.
 
 It will return a []byte with the server's response and a error.
 
