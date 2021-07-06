@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -40,15 +39,6 @@ func main() {
 	fmt.Println(string(faces), err)
 
 	fmt.Println("compare two images")
-
-	frameData := struct {
-		ImageToken string `json:"image_token"`
-	}{}
-
-	err = json.Unmarshal(faces, &frameData)
-	if err != nil {
-		panic(fmt.Sprintf("error while deserializing face detect data:\n%s", err.Error()))
-	}
 
 	result, err := client.FaceCompare(img1, img2)
 

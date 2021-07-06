@@ -18,7 +18,8 @@ type FaceRecClient struct {
 }
 
 const httpRequestTimeOut = 5 * time.Second
-const apiAddress = "https://api.dev.getperse.com"
+const apiAddress = "https://api.getperse.com"
+const apiVersion = "v0"
 
 // New creates a new instance of a face recognition client
 func New(key string, client *http.Client) *FaceRecClient {
@@ -69,7 +70,7 @@ func (faceRecClient *FaceRecClient) FaceCompare(image1 []byte, image2 []byte) ([
 		return nil, err
 	}
 
-	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/face/compare")
+	urlWithPath := fmt.Sprintf("%s/%s/%s", faceRecClient.url, apiVersion, "face/compare")
 
 	request, err := http.NewRequest("POST", urlWithPath, buffer)
 	if err != nil {
@@ -113,7 +114,7 @@ func (faceRecClient *FaceRecClient) DetectFaces(image []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	urlWithPath := fmt.Sprintf("%s%s", faceRecClient.url, "/v0/face/detect")
+	urlWithPath := fmt.Sprintf("%s/%s/%s", faceRecClient.url, apiVersion, "face/detect")
 
 	request, err := http.NewRequest("POST", urlWithPath, buffer)
 	if err != nil {
